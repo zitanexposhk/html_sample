@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>專案任務 · 子任務管理</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+        .container {
+            max-width: 860px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.02);
+            overflow: hidden;
+        }
+        .tabs {
+            display: flex;
+            background: #f0f2f6;
+            border-bottom: 1px solid #e4e7ed;
+            overflow-x: auto;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 14px 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            color: #4a5568;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            min-width: 80px;
+        }
+        .tab-btn i { font-size: 1rem; }
+        .tab-btn.active {
+            color: #1a5cff;
+            background: #ffffff;
+            border-bottom: 3px solid #1a5cff;
+        }
+        .tab-btn:not(.active):hover { background: #e8ebf0; }
+        .panel {
+            display: none;
+            padding: 20px 18px 24px;
+            background: #ffffff;
+        }
+        .panel.active { display: block; }
+
+        /* 表單 */
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        .form-group label .required { color: #e53e3e; margin-left: 2px; }
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            background: #f8fafc;
+            border: 1px solid #dbe0e8;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: 0.2s;
+            color: #0b1a33;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #1a5cff;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(26, 92, 255, 0.08);
+        }
+        textarea.form-control { min-height: 70px; resize: vertical; }
+        select.form-control {
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%234a5568" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+        .search-select-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .search-select-wrapper input {
+            width: 100%;
+            padding: 10px 14px;
+            background: #f8fafc;
+            border: 1px solid #dbe0e8;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: 0.2s;
+            color: #0b1a33;
+            cursor: pointer;
+        }
+        .search-select-wrapper input:focus {
+            outline: none;
+            border-color: #1a5cff;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(26, 92, 255, 0.08);
+        }
+        .search-select-wrapper .dropdown {
+            display: none;
+            position: absolute;
+            top: 110%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dbe0e8;
+            border-radius: 12px;
+            max-height: 180px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            padding: 4px 0;
+        }
+        .search-select-wrapper .dropdown.open { display: block; }
+        .search-select-wrapper .dropdown-item {
+            padding: 8px 14px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.1s;
+            color: #0b1a33;
+        }
+        .search-select-wrapper .dropdown-item:hover {
+            background: #eef4ff;
+            color: #1a5cff;
+        }
+        .form-row {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .form-row .form-group { flex: 1; min-width: 130px; }
+        .quick-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+        .quick-btn {
+            background: #eef2f8;
+            border: 1px solid #d0d8e4;
+            border-radius: 30px;
+            padding: 4px 14px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #1e293b;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .quick-btn:hover { background: #dce3ef; border-color: #1a5cff; color: #1a5cff; }
+        .file-upload-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            background: #f8fafc;
+            padding: 6px 14px 6px 16px;
+            border-radius: 30px;
+            border: 1px dashed #bdc3d0;
+            transition: 0.2s;
+        }
+        .file-upload-wrapper:hover { background: #f1f5f9; border-color: #1a5cff; }
+        .file-upload-wrapper i { color: #1a5cff; font-size: 1rem; }
+        .file-upload-wrapper span { color: #2d3a4f; font-size: 0.9rem; }
+        .file-upload-wrapper input[type="file"] {
+            flex: 1;
+            min-width: 120px;
+            border: none;
+            background: transparent;
+            padding: 6px 0;
+            font-size: 0.85rem;
+        }
+        .file-upload-wrapper input[type="file"]::file-selector-button {
+            border: none;
+            background: #e4e8f0;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            color: #1e293b;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: #1a5cff;
+            border: none;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 4px;
+            box-shadow: 0 4px 10px rgba(26, 92, 255, 0.2);
+        }
+        .btn-submit:hover { background: #0f4ad0; transform: scale(0.99); }
+
+        /* 詳情 Wrike 風格 */
+        .detail-layout {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .detail-left { flex: 2; min-width: 220px; }
+        .detail-right {
+            flex: 1.1;
+            min-width: 160px;
+            background: #f9faff;
+            border-radius: 18px;
+            padding: 16px 14px;
+            align-self: flex-start;
+        }
+        .detail-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0b1a33;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .detail-title .badge {
+            background: #eef2ff;
+            color: #1a5cff;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 30px;
+        }
+        .detail-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .meta-item {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            font-size: 0.88rem;
+            color: #2d3a4f;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #eceff5;
+        }
+        .meta-item i { width: 18px; color: #4f6a8a; font-size: 0.9rem; }
+        .meta-item strong { font-weight: 600; color: #1e293b; margin-right: 2px; }
+        .meta-item .value { color: #0b1a33; word-break: break-word; }
+        .detail-description {
+            background: #f8faff;
+            padding: 12px 16px;
+            border-radius: 14px;
+            margin: 8px 0 14px;
+            border-left: 4px solid #1a5cff;
+            color: #1e293b;
+            line-height: 1.5;
+            font-size: 0.92rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .badge-priority {
+            display: inline-block;
+            padding: 1px 10px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge-normal { background: #e2e8f0; color: #2d3748; }
+        .badge-urgent { background: #fed7d7; color: #9b2c2c; }
+        .badge-nonurgent { background: #c6f6d5; color: #22543d; }
+
+        /* subtask 表格樣式 (無顏色) */
+        .subtask-section {
+            margin-top: 16px;
+            border-top: 1px solid #eef2f6;
+            padding-top: 14px;
+        }
+        .subtask-section h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #0b1a33;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .subtask-section h4 span { font-weight: 400; font-size: 0.8rem; color: #4f6a8a; }
+        .subtask-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        .subtask-table th {
+            text-align: left;
+            padding: 8px 10px;
+            background: #f5f7fa;
+            color: #4a5568;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .subtask-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #edf2f7;
+            vertical-align: middle;
+        }
+        .subtask-table tr:hover { background: #fafcff; }
+        .subtask-table .enter-btn {
+            background: none;
+            border: none;
+            color: #1a5cff;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: 0.15s;
+        }
+        .subtask-table .enter-btn:hover {
+            background: #eef4ff;
+        }
+        .subtask-table .status-badge {
+            font-size: 0.7rem;
+            padding: 2px 12px;
+            border-radius: 30px;
+            background: #e2e8f0;
+            color: #2d3748;
+            display: inline-block;
+        }
+        .subtask-table .status-badge.done { background: #c6f6d5; color: #22543d; }
+        .subtask-table .status-badge.progress { background: #fefcbf; color: #975a16; }
+        .back-to-main {
+            background: #eef2f6;
+            border: none;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            color: #1e293b;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            transition: 0.15s;
+        }
+        .back-to-main:hover { background: #dce3ef; }
+
+        /* 右側 */
+        .assignee-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            padding: 10px 14px;
+            border-radius: 40px;
+            margin-bottom: 18px;
+            border: 1px solid #e9ecf3;
+        }
+        .assignee-avatar {
+            width: 40px;
+            height: 40px;
+            background: #1a5cff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .assignee-info .name { font-weight: 700; font-size: 0.95rem; color: #0b1a33; }
+        .assignee-info .role { font-size: 0.75rem; color: #64748b; }
+        .comment-section { margin-top: 4px; }
+        .comment-section h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .comment-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: flex-start;
+        }
+        .comment-avatar {
+            width: 30px;
+            height: 30px;
+            background: #d4dcec;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+        .comment-content {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 12px;
+            border: 1px solid #eaeef4;
+            flex: 1;
+        }
+        .comment-content .author { font-weight: 600; font-size: 0.85rem; color: #0b1a33; }
+        .comment-content .time { font-size: 0.65rem; color: #7a8aa3; margin-left: 8px; }
+        .comment-content .text { margin-top: 2px; color: #2d3a4f; font-size: 0.85rem; }
+        .add-comment {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .add-comment input {
+            flex: 1;
+            padding: 8px 14px;
+            border: 1px solid #dbe0e8;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            background: white;
+            min-width: 100px;
+        }
+        .add-comment input:focus { outline: none; border-color: #1a5cff; }
+        .add-comment button {
+            background: #1a5cff;
+            border: none;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .add-comment button:hover { background: #0f4ad0; }
+
+        /* 浮層 */
+        .subtask-detail-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.25);
+            backdrop-filter: blur(2px);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            padding: 16px;
+        }
+        .subtask-detail-overlay.open { display: flex; }
+        .subtask-detail-card {
+            background: white;
+            max-width: 420px;
+            width: 100%;
+            border-radius: 24px;
+            padding: 22px 20px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+            position: relative;
+        }
+        .subtask-detail-card .close-btn {
+            position: absolute;
+            top: 12px; right: 16px;
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            color: #7a8aa3;
+            cursor: pointer;
+        }
+        .subtask-detail-card .close-btn:hover { color: #1e293b; }
+        .subtask-detail-card h3 { font-size: 1.1rem; margin-bottom: 10px; }
+        .subtask-detail-card .field {
+            margin-bottom: 8px;
+            display: flex;
+            gap: 6px;
+            align-items: baseline;
+            font-size: 0.9rem;
+        }
+        .subtask-detail-card .field strong { min-width: 60px; color: #4a5568; font-weight: 600; }
+        .subtask-detail-card .actions { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+        @media screen and (max-width: 640px) {
+            .container { border-radius: 16px; }
+            .panel { padding: 16px 12px 20px; }
+            .detail-layout { flex-direction: column; gap: 16px; }
+            .detail-right { width: 100%; align-self: stretch; }
+            .tab-btn { font-size: 0.8rem; padding: 10px 4px; min-width: 60px; }
+            .form-row { flex-direction: column; gap: 0; }
+            .subtask-table { font-size: 0.8rem; }
+            .subtask-table th, .subtask-table td { padding: 6px 6px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 頁籤 -->
+    <div class="tabs">
+        <button class="tab-btn active" data-panel="panel-form"><i class="fas fa-pen-to-square"></i> 開立工作單</button>
+        <button class="tab-btn" data-panel="panel-detail"><i class="fas fa-list-check"></i> 檢視詳情</button>
+    </div>
+
+    <!-- 開單面板 -->
+    <div id="panel-form" class="panel active">
+        <form id="workOrderForm">
+            <div class="form-group">
+                <label>已儲存客戶 <span class="required">*</span></label>
+                <div class="search-select-wrapper" id="customerWrapper">
+                    <input type="text" id="customerInput" placeholder="搜尋客戶..." value="艾爾科技股份有限公司" autocomplete="off" />
+                    <div class="dropdown" id="customerDropdown"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>開始時間 <span class="required">*</span></label>
+                <input type="datetime-local" class="form-control" id="startTime" required value="2026-07-30T09:30" />
+            </div>
+            <div class="form-group">
+                <label>預計時間 <span class="required">*</span></label>
+                <input type="datetime-local" class="form-control" id="estimatedTime" required value="2026-07-30T12:30" />
+                <div class="quick-buttons">
+                    <button type="button" class="quick-btn" data-hours="12">+12h</button>
+                    <button type="button" class="quick-btn" data-hours="24">+24h</button>
+                    <button type="button" class="quick-btn" data-hours="48">+48h</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>問題類型 / 專案類型 <span class="required">*</span></label>
+                <select class="form-control" id="issueType" required>
+                    <option value="起預約網站">起預約網站</option>
+                    <option value="起e-shop網站">起e-shop網站</option>
+                    <option value="系統異常">系統異常</option>
+                    <option value="功能諮詢">功能諮詢</option>
+                    <option value="帳號權限">帳號權限</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>問題詳情 <span class="required">*</span></label>
+                <textarea class="form-control" id="issueDetail" rows="2" placeholder="請詳細描述問題…" required>客戶需要一個預約系統，包含線上付款與後台管理。</textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>優先順序 <span class="required">*</span></label>
+                    <select class="form-control" id="priority" required>
+                        <option value="正常">正常</option>
+                        <option value="緊急">緊急</option>
+                        <option value="非緊急">非緊急</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>處理員工</label>
+                    <div class="search-select-wrapper" id="assigneeWrapper">
+                        <input type="text" id="assigneeInput" placeholder="搜尋員工..." value="張佳慧" autocomplete="off" />
+                        <div class="dropdown" id="assigneeDropdown"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>所屬部門</label>
+                    <div class="search-select-wrapper" id="departmentWrapper">
+                        <input type="text" id="departmentInput" placeholder="搜尋部門..." value="技術支援部" autocomplete="off" />
+                        <div class="dropdown" id="departmentDropdown"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>所屬公司</label>
+                    <div class="search-select-wrapper" id="companyWrapper">
+                        <input type="text" id="companyInput" placeholder="搜尋公司..." value="雲端科技集團" autocomplete="off" />
+                        <div class="dropdown" id="companyDropdown"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>貼上附件</label>
+                <div class="file-upload-wrapper">
+                    <i class="fas fa-paperclip"></i>
+                    <span>拖曳或點選上傳</span>
+                    <input type="file" id="fileAttachment" multiple />
+                </div>
+            </div>
+            <button type="submit" class="btn-submit"><i class="fas fa-plus-circle"></i> 建立工作單</button>
+        </form>
+    </div>
+
+    <!-- 詳情面板 -->
+    <div id="panel-detail" class="panel">
+        <div class="detail-layout">
+            <div class="detail-left">
+                <div class="detail-title">
+                    <span id="detailTitle">預約網站建置</span>
+                    <span class="badge" id="detailTypeBadge">起預約網站</span>
+                    <span id="detailPriorityBadge" class="badge-priority badge-normal">正常</span>
+                </div>
+                <div class="detail-meta">
+                    <div class="meta-item"><i class="fas fa-user"></i> <strong>客戶</strong> <span class="value" id="detailCustomer">艾爾科技股份有限公司</span></div>
+                    <div class="meta-item"><i class="fas fa-clock"></i> <strong>開始</strong> <span class="value" id="detailStart">2026-07-30 09:30</span></div>
+                    <div class="meta-item"><i class="fas fa-hourglass-half"></i> <strong>預計</strong> <span class="value" id="detailEstimate">2026-07-30 12:30</span></div>
+                    <div class="meta-item"><i class="fas fa-signal"></i> <strong>優先</strong> <span class="value" id="detailPriority">正常</span></div>
+                    <div class="meta-item"><i class="fas fa-user-tie"></i> <strong>處理員工</strong> <span class="value" id="detailAssignee">張佳慧</span></div>
+                    <div class="meta-item"><i class="fas fa-building"></i> <strong>部門</strong> <span class="value" id="detailDepartment">技術支援部</span></div>
+                    <div class="meta-item"><i class="fas fa-building-columns"></i> <strong>公司</strong> <span class="value" id="detailCompany">雲端科技集團</span></div>
+                    <div class="meta-item"><i class="fas fa-paperclip"></i> <strong>附件</strong> <span class="value" id="detailAttachment">尚未附加</span></div>
+                </div>
+                <div style="font-weight:600; font-size:0.9rem; color:#1e293b;">📋 問題描述</div>
+                <div class="detail-description" id="detailDescription">客戶需要一個預約系統，包含線上付款與後台管理。</div>
+
+                <!-- subtask 表格區塊 -->
+                <div class="subtask-section" id="subtaskSection">
+                    <h4><i class="fas fa-diagram-project"></i> 子任務 <span id="subtaskCount">3</span></h4>
+                    <table class="subtask-table" id="subtaskTable">
+                        <thead>
+                            <tr>
+                                <th style="width:36px;"></th>
+                                <th>任務名稱</th>
+                                <th>負責人</th>
+                                <th>狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subtaskBody"></tbody>
+                    </table>
+                    <button class="back-to-main" id="backToMainBtn" style="display:none;"><i class="fas fa-arrow-left"></i> 返回主任務</button>
+                </div>
+            </div>
+
+            <!-- 右側 -->
+            <div class="detail-right">
+                <div class="assignee-card">
+                    <div class="assignee-avatar" id="detailAssigneeAvatar">JH</div>
+                    <div class="assignee-info">
+                        <div class="name" id="detailAssigneeName">張佳慧</div>
+                        <div class="role" id="detailAssigneeRole">技術支援部 · 負責人</div>
+                    </div>
+                    <i class="fas fa-chevron-down" style="color:#7a8aa3; font-size:0.7rem;"></i>
+                </div>
+                <div class="comment-section">
+                    <h4><i class="fas fa-comment" style="color:#1a5cff;"></i> 留言 (2)</h4>
+                    <div class="comment-item">
+                        <div class="comment-avatar">CW</div>
+                        <div class="comment-content">
+                            <span class="author">王 曉明</span><span class="time">今天 09:48</span>
+                            <div class="text">已確認需求規格，等待設計稿。</div>
+                        </div>
+                    </div>
+                    <div class="comment-item">
+                        <div class="comment-avatar">LH</div>
+                        <div class="comment-content">
+                            <span class="author">李 冠廷</span><span class="time">今天 10:15</span>
+                            <div class="text">API 文件已準備好，可開始開發。</div>
+                        </div>
+                    </div>
+                    <div class="add-comment">
+                        <input type="text" placeholder="寫下留言…" id="newCommentInput" />
+                        <button id="addCommentBtn"><i class="fas fa-paper-plane"></i> 發送</button>
+                    </div>
+                    <div id="commentList" style="margin-top:8px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 子任務詳情浮層 -->
+<div class="subtask-detail-overlay" id="subtaskOverlay">
+    <div class="subtask-detail-card">
+        <button class="close-btn" id="closeSubtaskDetail"><i class="fas fa-xmark"></i></button>
+        <h3 id="subtaskDetailTitle">子任務名稱</h3>
+        <div class="field"><strong>負責人</strong> <span id="subtaskDetailAssignee">—</span></div>
+        <div class="field"><strong>狀態</strong> <span id="subtaskDetailStatus">進行中</span></div>
+        <div class="field"><strong>描述</strong> <span id="subtaskDetailDesc">無</span></div>
+        <div class="actions">
+            <button class="quick-btn" id="subtaskMarkDone">標記完成</button>
+            <button class="quick-btn" id="subtaskMarkProgress">進行中</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ===== 可搜尋下拉 =====
+        function initSearchSelect(inputId, dropdownId, items, defaultVal) {
+            const input = document.getElementById(inputId);
+            const dropdown = document.getElementById(dropdownId);
+            if (!input || !dropdown) return;
+
+            function render(filter = '') {
+                const lower = filter.toLowerCase();
+                const matched = items.filter(item => item.toLowerCase().includes(lower));
+                dropdown.innerHTML = '';
+                if (matched.length === 0) {
+                    const div = document.createElement('div');
+                    div.className = 'dropdown-item';
+                    div.textContent = '無符合選項';
+                    div.style.color = '#7a8aa3';
+                    dropdown.appendChild(div);
+                    return;
+                }
+                matched.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'dropdown-item';
+                    div.textContent = item;
+                    div.addEventListener('click', function() {
+                        input.value = item;
+                        dropdown.classList.remove('open');
+                        input.dispatchEvent(new Event('change'));
+                    });
+                    dropdown.appendChild(div);
+                });
+            }
+
+            input.addEventListener('input', function() {
+                render(this.value);
+                dropdown.classList.add('open');
+            });
+
+            input.addEventListener('focus', function() {
+                render(this.value);
+                dropdown.classList.add('open');
+            });
+
+            document.addEventListener('click', function(e) {
+                const wrapper = input.closest('.search-select-wrapper');
+                if (wrapper && !wrapper.contains(e.target)) {
+                    dropdown.classList.remove('open');
+                }
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') { dropdown.classList.remove('open'); return; }
+                if (e.key === 'Enter') {
+                    const first = dropdown.querySelector('.dropdown-item:not([style])');
+                    if (first) { first.click(); }
+                    e.preventDefault();
+                }
+            });
+
+            if (defaultVal && items.includes(defaultVal)) {
+                input.value = defaultVal;
+            } else if (items.length > 0) {
+                input.value = items[0];
+            }
+            render(input.value);
+        }
+
+        // ===== 資料 =====
+        const customerList = ['艾爾科技股份有限公司', '星雲互動設計', '兆豐聯合資訊', '新亞數位行銷', '智慧生活科技', '未來軟體開發'];
+        const employeeList = ['張佳慧', '王曉明', '李冠廷', '陳思齊', '林芳瑜', '吳宗翰', '黃筱涵'];
+        const departmentList = ['技術支援部', '產品研發部', '客戶服務部', '行政管理部', '行銷企劃部'];
+        const companyList = ['雲端科技集團', '艾爾科技股份有限公司', '星雲互動設計', '兆豐聯合資訊', '新亞數位行銷', '智慧生活科技', '未來軟體開發'];
+
+        initSearchSelect('customerInput', 'customerDropdown', customerList, '艾爾科技股份有限公司');
+        initSearchSelect('assigneeInput', 'assigneeDropdown', employeeList, '張佳慧');
+        initSearchSelect('departmentInput', 'departmentDropdown', departmentList, '技術支援部');
+        initSearchSelect('companyInput', 'companyDropdown', companyList, '雲端科技集團');
+
+        // 頁籤
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const panels = { form: document.getElementById('panel-form'), detail: document.getElementById('panel-detail') };
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const target = this.dataset.panel.replace('panel-', '');
+                Object.keys(panels).forEach(k => panels[k].classList.toggle('active', k === target));
+                if (target === 'detail') renderSubtasks();
+            });
+        });
+
+        // 快速按鈕
+        const estimatedInput = document.getElementById('estimatedTime');
+        document.querySelectorAll('.quick-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const hours = parseInt(this.dataset.hours, 10);
+                const base = estimatedInput.value ? new Date(estimatedInput.value) : new Date();
+                if (!isNaN(base)) { base.setHours(base.getHours() + hours); estimatedInput.value = base.toISOString().slice(0, 16); }
+            });
+        });
+
+        // subtask 資料
+        const subtaskMap = {
+            '起預約網站': [
+                { name: '需求分析', assignee: '王曉明', status: '進行中', desc: '訪談客戶，產出功能規格' },
+                { name: 'UI/UX 設計', assignee: '李冠廷', status: '待處理', desc: '設計預約流程與後台' },
+                { name: '前後端開發', assignee: '張佳慧', status: '待處理', desc: '開發預約系統核心' },
+                { name: '測試與部署', assignee: '陳思齊', status: '待處理', desc: '整合測試與上線' }
+            ],
+            '起e-shop網站': [
+                { name: '商品目錄', assignee: '王曉明', status: '進行中', desc: '建立商品分類與屬性' },
+                { name: '購物車與結帳', assignee: '李冠廷', status: '待處理', desc: '實作購物車與金流' },
+                { name: '會員系統', assignee: '張佳慧', status: '待處理', desc: '會員註冊/登入/訂單' }
+            ],
+            '系統異常': [
+                { name: '錯誤日誌分析', assignee: '陳思齊', status: '進行中', desc: '檢視伺服器日誌' },
+                { name: '修復與驗證', assignee: '張佳慧', status: '待處理', desc: '修復並回歸測試' }
+            ],
+            '功能諮詢': [
+                { name: '需求釐清', assignee: '王曉明', status: '進行中', desc: '與客戶確認細節' },
+                { name: '提供建議', assignee: '李冠廷', status: '待處理', desc: '提出技術建議' }
+            ],
+            '帳號權限': [
+                { name: '權限盤點', assignee: '陳思齊', status: '進行中', desc: '檢查現有權限設定' },
+                { name: '調整權限', assignee: '張佳慧', status: '待處理', desc: '依需求調整權限' }
+            ],
+            '其他': [
+                { name: '初步評估', assignee: '王曉明', status: '進行中', desc: '了解問題範圍' },
+                { name: '解決方案', assignee: '李冠廷', status: '待處理', desc: '規劃處理步驟' }
+            ]
+        };
+
+        let subtaskData = [];
+        let currentSubtaskIndex = -1;
+
+        function renderSubtasks() {
+            const type = document.getElementById('issueType').value;
+            subtaskData = (subtaskMap[type] || subtaskMap['其他']).map(item => ({ ...item }));
+            const tbody = document.getElementById('subtaskBody');
+            tbody.innerHTML = '';
+            document.getElementById('subtaskCount').textContent = subtaskData.length;
+
+            subtaskData.forEach((item, idx) => {
+                const tr = document.createElement('tr');
+                const statusCls = item.status === '完成' ? 'done' : (item.status === '進行中' ? 'progress' : '');
+                tr.innerHTML = `
+                    <td>
+                        <button class="enter-btn" data-index="${idx}" title="進入子任務">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </td>
+                    <td>${item.name}</td>
+                    <td><i class="fas fa-user-circle" style="color:#4f6a8a;"></i> ${item.assignee}</td>
+                    <td><span class="status-badge ${statusCls}">${item.status}</span></td>
+                `;
+                const enterBtn = tr.querySelector('.enter-btn');
+                enterBtn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    openSubtaskDetail(index);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openSubtaskDetail(index) {
+            if (index < 0 || index >= subtaskData.length) return;
+            currentSubtaskIndex = index;
+            const item = subtaskData[index];
+            document.getElementById('subtaskDetailTitle').textContent = item.name;
+            document.getElementById('subtaskDetailAssignee').textContent = item.assignee;
+            document.getElementById('subtaskDetailStatus').textContent = item.status;
+            document.getElementById('subtaskDetailDesc').textContent = item.desc || '無';
+            document.getElementById('subtaskOverlay').classList.add('open');
+            document.getElementById('backToMainBtn').style.display = 'inline-flex';
+        }
+
+        function closeSubtaskDetail() { document.getElementById('subtaskOverlay').classList.remove('open'); }
+
+        function updateSubtaskStatus(status) {
+            if (currentSubtaskIndex < 0 || currentSubtaskIndex >= subtaskData.length) return;
+            subtaskData[currentSubtaskIndex].status = status;
+            closeSubtaskDetail();
+            renderSubtasks();
+        }
+
+        document.getElementById('closeSubtaskDetail').addEventListener('click', closeSubtaskDetail);
+        document.getElementById('subtaskOverlay').addEventListener('click', function(e) { if (e.target === this) closeSubtaskDetail(); });
+        document.getElementById('subtaskMarkDone').addEventListener('click', function() { updateSubtaskStatus('完成'); });
+        document.getElementById('subtaskMarkProgress').addEventListener('click', function() { updateSubtaskStatus('進行中'); });
+        document.getElementById('backToMainBtn').addEventListener('click', function() { closeSubtaskDetail(); });
+
+        // 開單提交
+        const form = document.getElementById('workOrderForm');
+        const detail = {
+            customer: document.getElementById('detailCustomer'),
+            start: document.getElementById('detailStart'),
+            estimate: document.getElementById('detailEstimate'),
+            typeBadge: document.getElementById('detailTypeBadge'),
+            description: document.getElementById('detailDescription'),
+            attachment: document.getElementById('detailAttachment'),
+            title: document.getElementById('detailTitle'),
+            priority: document.getElementById('detailPriority'),
+            priorityBadge: document.getElementById('detailPriorityBadge'),
+            assignee: document.getElementById('detailAssignee'),
+            assigneeName: document.getElementById('detailAssigneeName'),
+            assigneeAvatar: document.getElementById('detailAssigneeAvatar'),
+            assigneeRole: document.getElementById('detailAssigneeRole'),
+            department: document.getElementById('detailDepartment'),
+            company: document.getElementById('detailCompany'),
+        };
+
+        function getFileNames(input) {
+            if (!input.files || input.files.length === 0) return '未附加';
+            return Array.from(input.files).map(f => f.name).join(', ');
+        }
+        function formatDateTime(dtStr) {
+            if (!dtStr) return '未設定';
+            try { const d = new Date(dtStr); if (isNaN(d)) return dtStr; return d.toLocaleString('zh-Hant', { hour12: false }); } catch { return dtStr; }
+        }
+        function getPriorityClass(v) {
+            if (v === '緊急') return 'badge-urgent';
+            if (v === '非緊急') return 'badge-nonurgent';
+            return 'badge-normal';
+        }
+
+        function updateDetailView() {
+            const customer = document.getElementById('customerInput').value.trim() || '未選擇';
+            const start = document.getElementById('startTime').value;
+            const estimate = document.getElementById('estimatedTime').value;
+            const type = document.getElementById('issueType').value;
+            const desc = document.getElementById('issueDetail').value || '（無描述）';
+            const priority = document.getElementById('priority').value;
+            const assignee = document.getElementById('assigneeInput').value.trim() || '未指派';
+            const department = document.getElementById('departmentInput').value.trim() || '未選擇';
+            const company = document.getElementById('companyInput').value.trim() || '未填寫';
+            const files = getFileNames(document.getElementById('fileAttachment'));
+
+            detail.customer.textContent = customer;
+            detail.start.textContent = formatDateTime(start);
+            detail.estimate.textContent = formatDateTime(estimate);
+            detail.typeBadge.textContent = type;
+            detail.description.textContent = desc;
+            detail.attachment.textContent = files;
+            detail.title.textContent = desc.length > 28 ? desc.substring(0, 28) + '…' : desc || '工作單';
+            detail.priority.textContent = priority;
+            detail.priorityBadge.textContent = priority;
+            detail.priorityBadge.className = 'badge-priority ' + getPriorityClass(priority);
+            detail.assignee.textContent = assignee;
+            detail.assigneeName.textContent = assignee;
+            detail.assigneeAvatar.textContent = assignee.charAt(0).toUpperCase() || '?';
+            detail.assigneeRole.textContent = department + ' · 負責人';
+            detail.department.textContent = department;
+            detail.company.textContent = company;
+            renderSubtasks();
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateDetailView();
+            tabBtns.forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-panel="panel-detail"]').classList.add('active');
+            panels.form.classList.remove('active');
+            panels.detail.classList.add('active');
+            document.getElementById('backToMainBtn').style.display = 'inline-flex';
+        });
+
+        // 留言
+        const addCommentBtn = document.getElementById('addCommentBtn');
+        const commentInput = document.getElementById('newCommentInput');
+        const commentList = document.getElementById('commentList');
+        addCommentBtn.addEventListener('click', function() {
+            const text = commentInput.value.trim();
+            if (!text) return;
+            const el = document.createElement('div');
+            el.className = 'comment-item';
+            el.innerHTML = `<div class="comment-avatar">ME</div><div class="comment-content"><span class="author">我</span><span class="time">剛剛</span><div class="text">${text}</div></div>`;
+            commentList.appendChild(el);
+            commentInput.value = '';
+        });
+        commentInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') { e.preventDefault(); addCommentBtn.click(); } });
+
+        setTimeout(() => { updateDetailView(); document.getElementById('backToMainBtn').style.display = 'inline-flex'; }, 80);
+    })();
+</script>
+</body>
+</html>
