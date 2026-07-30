@@ -302,7 +302,7 @@
         .badge-urgent { background: #fed7d7; color: #9b2c2c; }
         .badge-nonurgent { background: #c6f6d5; color: #22543d; }
 
-        /* subtask 表格樣式 (無顏色) */
+        /* subtask 表格 */
         .subtask-section {
             margin-top: 16px;
             border-top: 1px solid #eef2f6;
@@ -515,6 +515,59 @@
         .subtask-detail-card .field strong { min-width: 60px; color: #4a5568; font-weight: 600; }
         .subtask-detail-card .actions { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
 
+        /* 標籤樣式 */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .tag-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #eef2ff;
+            color: #1a5cff;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .tag-item .remove-tag {
+            cursor: pointer;
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+        .tag-item .remove-tag:hover { opacity: 1; }
+        .tag-input-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .tag-input-wrapper input {
+            flex: 1;
+            min-width: 120px;
+            padding: 8px 14px;
+            border: 1px solid #dbe0e8;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            background: #f8fafc;
+        }
+        .tag-input-wrapper input:focus { outline: none; border-color: #1a5cff; }
+        .tag-input-wrapper .add-tag-btn {
+            padding: 6px 16px;
+            background: #1a5cff;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .tag-input-wrapper .add-tag-btn:hover { background: #0f4ad0; }
+
         @media screen and (max-width: 640px) {
             .container { border-radius: 16px; }
             .panel { padding: 16px 12px 20px; }
@@ -529,7 +582,7 @@
 </head>
 <body>
 <div class="container">
-    <!-- 頁籤 -->
+    <!-- 主頁籤 -->
     <div class="tabs">
         <button class="tab-btn active" data-panel="panel-form"><i class="fas fa-pen-to-square"></i> 開立工作單</button>
         <button class="tab-btn" data-panel="panel-detail"><i class="fas fa-list-check"></i> 檢視詳情</button>
@@ -538,6 +591,7 @@
     <!-- 開單面板 -->
     <div id="panel-form" class="panel active">
         <form id="workOrderForm">
+            <!-- 客戶 -->
             <div class="form-group">
                 <label>已儲存客戶 <span class="required">*</span></label>
                 <div class="search-select-wrapper" id="customerWrapper">
@@ -545,10 +599,37 @@
                     <div class="dropdown" id="customerDropdown"></div>
                 </div>
             </div>
+
+            <!-- 問題類型 (清楚顯示) -->
+            <div class="form-group" style="border-left: 4px solid #1a5cff; padding-left: 12px; background: #f8faff; border-radius: 8px; padding: 12px 12px 8px 12px;">
+                <label style="font-size: 0.95rem;">📌 問題類型 / 專案類型 <span class="required">*</span></label>
+                <select class="form-control" id="issueType" required style="border-color: #1a5cff; background: #ffffff;">
+                    <option value="起預約網站">起預約網站</option>
+                    <option value="起e-shop網站">起e-shop網站</option>
+                    <option value="系統異常">系統異常</option>
+                    <option value="功能諮詢">功能諮詢</option>
+                    <option value="帳號權限">帳號權限</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+
+            <!-- 優先順序 -->
+            <div class="form-group">
+                <label>優先順序 <span class="required">*</span></label>
+                <select class="form-control" id="priority" required>
+                    <option value="正常">正常</option>
+                    <option value="緊急">緊急</option>
+                    <option value="非緊急">非緊急</option>
+                </select>
+            </div>
+
+            <!-- 開始時間 -->
             <div class="form-group">
                 <label>開始時間 <span class="required">*</span></label>
                 <input type="datetime-local" class="form-control" id="startTime" required value="2026-07-30T09:30" />
             </div>
+
+            <!-- 預計時間 -->
             <div class="form-group">
                 <label>預計時間 <span class="required">*</span></label>
                 <input type="datetime-local" class="form-control" id="estimatedTime" required value="2026-07-30T12:30" />
@@ -558,54 +639,27 @@
                     <button type="button" class="quick-btn" data-hours="48">+48h</button>
                 </div>
             </div>
-            <div class="form-group">
-                <label>問題類型 / 專案類型 <span class="required">*</span></label>
-                <select class="form-control" id="issueType" required>
-                    <option value="起預約網站">起預約網站</option>
-                    <option value="起e-shop網站">起e-shop網站</option>
-                    <option value="系統異常">系統異常</option>
-                    <option value="功能諮詢">功能諮詢</option>
-                    <option value="帳號權限">帳號權限</option>
-                    <option value="其他">其他</option>
-                </select>
-            </div>
+
+            <!-- 問題詳情 -->
             <div class="form-group">
                 <label>問題詳情 <span class="required">*</span></label>
                 <textarea class="form-control" id="issueDetail" rows="2" placeholder="請詳細描述問題…" required>客戶需要一個預約系統，包含線上付款與後台管理。</textarea>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>優先順序 <span class="required">*</span></label>
-                    <select class="form-control" id="priority" required>
-                        <option value="正常">正常</option>
-                        <option value="緊急">緊急</option>
-                        <option value="非緊急">非緊急</option>
-                    </select>
+
+            <!-- 標籤 -->
+            <div class="form-group">
+                <label>標籤</label>
+                <div class="tag-input-wrapper">
+                    <input type="text" id="tagInput" placeholder="輸入標籤，按 Enter 或點擊新增" />
+                    <button type="button" class="add-tag-btn" id="addTagBtn"><i class="fas fa-plus"></i> 新增</button>
                 </div>
-                <div class="form-group">
-                    <label>處理員工</label>
-                    <div class="search-select-wrapper" id="assigneeWrapper">
-                        <input type="text" id="assigneeInput" placeholder="搜尋員工..." value="張佳慧" autocomplete="off" />
-                        <div class="dropdown" id="assigneeDropdown"></div>
-                    </div>
+                <div class="tags-container" id="tagsContainer">
+                    <span class="tag-item">前端 <span class="remove-tag" data-tag="前端">&times;</span></span>
+                    <span class="tag-item">後台 <span class="remove-tag" data-tag="後台">&times;</span></span>
                 </div>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>所屬部門</label>
-                    <div class="search-select-wrapper" id="departmentWrapper">
-                        <input type="text" id="departmentInput" placeholder="搜尋部門..." value="技術支援部" autocomplete="off" />
-                        <div class="dropdown" id="departmentDropdown"></div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>所屬公司</label>
-                    <div class="search-select-wrapper" id="companyWrapper">
-                        <input type="text" id="companyInput" placeholder="搜尋公司..." value="雲端科技集團" autocomplete="off" />
-                        <div class="dropdown" id="companyDropdown"></div>
-                    </div>
-                </div>
-            </div>
+
+            <!-- 附件 -->
             <div class="form-group">
                 <label>貼上附件</label>
                 <div class="file-upload-wrapper">
@@ -614,6 +668,30 @@
                     <input type="file" id="fileAttachment" multiple />
                 </div>
             </div>
+
+            <!-- 指派 -->
+            <div class="form-group">
+                <label>處理員工</label>
+                <div class="search-select-wrapper" id="assigneeWrapper">
+                    <input type="text" id="assigneeInput" placeholder="搜尋員工..." value="張佳慧" autocomplete="off" />
+                    <div class="dropdown" id="assigneeDropdown"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>所屬部門</label>
+                <div class="search-select-wrapper" id="departmentWrapper">
+                    <input type="text" id="departmentInput" placeholder="搜尋部門..." value="技術支援部" autocomplete="off" />
+                    <div class="dropdown" id="departmentDropdown"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>所屬公司</label>
+                <div class="search-select-wrapper" id="companyWrapper">
+                    <input type="text" id="companyInput" placeholder="搜尋公司..." value="雲端科技集團" autocomplete="off" />
+                    <div class="dropdown" id="companyDropdown"></div>
+                </div>
+            </div>
+
             <button type="submit" class="btn-submit"><i class="fas fa-plus-circle"></i> 建立工作單</button>
         </form>
     </div>
@@ -632,6 +710,7 @@
                     <div class="meta-item"><i class="fas fa-clock"></i> <strong>開始</strong> <span class="value" id="detailStart">2026-07-30 09:30</span></div>
                     <div class="meta-item"><i class="fas fa-hourglass-half"></i> <strong>預計</strong> <span class="value" id="detailEstimate">2026-07-30 12:30</span></div>
                     <div class="meta-item"><i class="fas fa-signal"></i> <strong>優先</strong> <span class="value" id="detailPriority">正常</span></div>
+                    <div class="meta-item"><i class="fas fa-tags"></i> <strong>標籤</strong> <span class="value" id="detailTags">前端, 後台</span></div>
                     <div class="meta-item"><i class="fas fa-user-tie"></i> <strong>處理員工</strong> <span class="value" id="detailAssignee">張佳慧</span></div>
                     <div class="meta-item"><i class="fas fa-building"></i> <strong>部門</strong> <span class="value" id="detailDepartment">技術支援部</span></div>
                     <div class="meta-item"><i class="fas fa-building-columns"></i> <strong>公司</strong> <span class="value" id="detailCompany">雲端科技集團</span></div>
@@ -640,7 +719,6 @@
                 <div style="font-weight:600; font-size:0.9rem; color:#1e293b;">📋 問題描述</div>
                 <div class="detail-description" id="detailDescription">客戶需要一個預約系統，包含線上付款與後台管理。</div>
 
-                <!-- subtask 表格區塊 -->
                 <div class="subtask-section" id="subtaskSection">
                     <h4><i class="fas fa-diagram-project"></i> 子任務 <span id="subtaskCount">3</span></h4>
                     <table class="subtask-table" id="subtaskTable">
@@ -658,7 +736,6 @@
                 </div>
             </div>
 
-            <!-- 右側 -->
             <div class="detail-right">
                 <div class="assignee-card">
                     <div class="assignee-avatar" id="detailAssigneeAvatar">JH</div>
@@ -712,6 +789,53 @@
 
 <script>
     (function() {
+        // ===== 標籤管理 =====
+        let tags = ['前端', '後台'];
+        const tagsContainer = document.getElementById('tagsContainer');
+        const tagInput = document.getElementById('tagInput');
+        const addTagBtn = document.getElementById('addTagBtn');
+        const detailTags = document.getElementById('detailTags');
+
+        function renderTags() {
+            tagsContainer.innerHTML = '';
+            tags.forEach(tag => {
+                const span = document.createElement('span');
+                span.className = 'tag-item';
+                span.innerHTML = `${tag} <span class="remove-tag" data-tag="${tag}">&times;</span>`;
+                span.querySelector('.remove-tag').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const t = this.dataset.tag;
+                    tags = tags.filter(tt => tt !== t);
+                    renderTags();
+                    updateDetailTags();
+                });
+                tagsContainer.appendChild(span);
+            });
+            updateDetailTags();
+        }
+
+        function updateDetailTags() {
+            detailTags.textContent = tags.length > 0 ? tags.join(', ') : '無';
+        }
+
+        function addTag() {
+            const val = tagInput.value.trim();
+            if (val && !tags.includes(val)) {
+                tags.push(val);
+                renderTags();
+                tagInput.value = '';
+            } else if (tags.includes(val)) {
+                alert('標籤已存在');
+            }
+        }
+
+        addTagBtn.addEventListener('click', addTag);
+        tagInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); addTag(); }
+        });
+
+        renderTags();
+
         // ===== 可搜尋下拉 =====
         function initSearchSelect(inputId, dropdownId, items, defaultVal) {
             const input = document.getElementById(inputId);
@@ -788,7 +912,7 @@
         initSearchSelect('departmentInput', 'departmentDropdown', departmentList, '技術支援部');
         initSearchSelect('companyInput', 'companyDropdown', companyList, '雲端科技集團');
 
-        // 頁籤
+        // ===== 主頁籤 =====
         const tabBtns = document.querySelectorAll('.tab-btn');
         const panels = { form: document.getElementById('panel-form'), detail: document.getElementById('panel-detail') };
         tabBtns.forEach(btn => {
@@ -801,7 +925,7 @@
             });
         });
 
-        // 快速按鈕
+        // ===== 快速按鈕 =====
         const estimatedInput = document.getElementById('estimatedTime');
         document.querySelectorAll('.quick-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
@@ -812,7 +936,7 @@
             });
         });
 
-        // subtask 資料
+        // ===== subtask 資料 =====
         const subtaskMap = {
             '起預約網站': [
                 { name: '需求分析', assignee: '王曉明', status: '進行中', desc: '訪談客戶，產出功能規格' },
@@ -902,7 +1026,7 @@
         document.getElementById('subtaskMarkProgress').addEventListener('click', function() { updateSubtaskStatus('進行中'); });
         document.getElementById('backToMainBtn').addEventListener('click', function() { closeSubtaskDetail(); });
 
-        // 開單提交
+        // ===== 開單提交 =====
         const form = document.getElementById('workOrderForm');
         const detail = {
             customer: document.getElementById('detailCustomer'),
@@ -920,6 +1044,7 @@
             assigneeRole: document.getElementById('detailAssigneeRole'),
             department: document.getElementById('detailDepartment'),
             company: document.getElementById('detailCompany'),
+            tags: document.getElementById('detailTags'),
         };
 
         function getFileNames(input) {
@@ -977,7 +1102,7 @@
             document.getElementById('backToMainBtn').style.display = 'inline-flex';
         });
 
-        // 留言
+        // ===== 留言 =====
         const addCommentBtn = document.getElementById('addCommentBtn');
         const commentInput = document.getElementById('newCommentInput');
         const commentList = document.getElementById('commentList');
