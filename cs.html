@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp 企業級 CRM 系統 (單頁全整合版)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* 隱藏捲軸與切換動畫設定 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* 主頁面切換控制 */
+    .app-view { display: none; height: 100%; flex: 1; }
+    .app-view.active { display: flex; }
+    
+    /* 設定頁面的次級面板切換控制 */
+    .setting-panel { display: none; }
+    .setting-panel.active { display: block; }
+    
+    /* 確保對話區可平滑捲動 */
+    #chat-area { scroll-behavior: smooth; }
+    
+    /* 內部備註模式的輸入框樣式 */
+    .note-mode-active { background-color: #FEF3C7 !important; border-color: #F59E0B !important; }
+    
+    /* 自訂 Toggle 開關樣式 */
+    .toggle-checkbox:checked { right: 0; border-color: #4F46E5; }
+    .toggle-checkbox:checked + .toggle-label { background-color: #4F46E5; }
+  </style>
+</head>
+<body class="bg-slate-100 h-screen font-sans flex overflow-hidden">
+
+  <!-- ========================================== -->
+  <!-- 0. 全域系統主導覽列 (Main App Sidebar) -->
+  <!-- ========================================== -->
+  <nav class="w-16 bg-slate-900 flex flex-col items-center py-4 shrink-0 z-50">
+    <div class="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-bold mb-8 shadow-lg">W</div>
+    <div class="flex flex-col gap-4 w-full">
+      <!-- 點擊切換至收件匣 -->
+      <button onclick="switchAppView('inbox', this)" class="nav-btn w-full py-3 flex justify-center text-indigo-400 border-l-2 border-indigo-500 hover:bg-slate-800 transition-colors relative group">
+        <i data-lucide="message-square" class="w-6 h-6"></i>
+        <span class="absolute top-2 right-3 w-2 h-2 bg-red-500 rounded-full"></span>
+      </button>
+      <button class="w-full py-3 flex justify-center text-slate-400 border-l-2 border-transparent hover:bg-slate-800 transition-colors">
+        <i data-lucide="users" class="w-6 h-6"></i>
+      </button>
+      <button class="w-full py-3 flex justify-center text-slate-400 border-l-2 border-transparent hover:bg-slate-800 transition-colors">
+        <i data-lucide="bar-chart-2" class="w-6 h-6"></i>
+      </button>
+      <!-- 點擊切換至設定後台 -->
+      <button onclick="switchAppView('settings', this)" class="nav-btn w-full py-3 flex justify-center text-slate-400 border-l-2 border-transparent hover:bg-slate-800 transition-colors">
+        <i data-lucide="settings" class="w-6 h-6"></i>
+      </button>
+    </div>
+    <div class="mt-auto pb-4">
+      <div class="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center text-slate-300 text-xs font-bold border border-slate-600">KY</div>
+    </div>
+  </nav>
+
+  <!-- ========================================== -->
+  <!-- 主畫面 1: 對話工作站 (Inbox View) -->
+  <!-- ========================================== -->
+  <div id="view-inbox" class="app-view active">
+    
+    <!-- 1.1 左側對話列表 -->
+    <div class="w-[340px] bg-white border-r border-gray-200 flex flex-col h-full shrink-0 shadow-sm z-10">
+      <div class="p-4 border-b border-gray-200 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="font-bold text-gray-800 text-lg flex items-center gap-2">
+            <i data-lucide="inbox" class="w-5 h-5 text-indigo-600"></i> 收件匣
+          </h2>
+          <div class="flex items-center gap-2 bg-gray-100 px-2 py-1 rounded-md cursor-pointer hover:bg-gray-200">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span class="text-[11px] font-bold text-gray-600">接收派單中</span>
+          </div>
+        </div>
+        <div class="relative">
+          <input type="text" placeholder="搜尋姓名、電話或訂單號..." class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500">
+          <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5"></i>
+        </div>
+        <div class="flex gap-1 overflow-x-auto pb-1 text-xs no-scrollbar">
+          <button class="bg-indigo-600 text-white px-3 py-1.5 rounded-md font-medium shrink-0">我的待辦 (4)</button>
+          <button class="bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 px-3 py-1.5 rounded-md font-medium shrink-0">未分配公海 (12)</button>
+          <button class="bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-md font-medium shrink-0">SLA 違規 (1)</button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto divide-y divide-gray-100">
+        <!-- SLA 違規項目 -->
+        <div class="p-3 bg-red-50/40 border-l-4 border-red-500 cursor-pointer flex gap-3 items-start relative">
+          <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm shrink-0">CO</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-baseline">
+              <h4 class="font-bold text-gray-900 text-sm truncate">CoLate0w0</h4>
+              <span class="text-[11px] text-red-600 font-bold flex items-center gap-0.5"><i data-lucide="clock" class="w-3 h-3"></i> 超時 12m</span>
+            </div>
+            <p class="text-xs text-red-800 truncate mt-0.5 font-medium">顧客: 有人可以幫忙嗎？</p>
+            <div class="flex flex-wrap gap-1 mt-1.5">
+              <span class="bg-red-100 text-red-800 text-[10px] px-1.5 py-0.5 rounded font-medium border border-red-200">急件處理</span>
+              <span class="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded font-medium border border-amber-200">VIP</span>
+            </div>
+          </div>
+        </div>
+        <!-- 正常對話項目 -->
+        <div class="p-3 hover:bg-gray-50 cursor-pointer flex gap-3 items-start relative">
+          <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">TY</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-baseline">
+              <h4 class="font-bold text-gray-900 text-sm truncate">Tiffany</h4>
+              <span class="text-[11px] text-gray-400">10:42</span>
+            </div>
+            <p class="text-xs text-gray-500 truncate mt-0.5">預約明天的場地</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1.2 中間對話主視窗 -->
+    <div class="flex-1 flex flex-col h-full bg-[#f0f2f5] relative">
+      <div class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm z-10 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">CO</div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-bold text-gray-900">CoLate0w0</h3>
+              <span class="bg-gray-100 text-gray-600 border border-gray-200 text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 font-bold">
+                <i data-lucide="user" class="w-3 h-3 text-indigo-600"></i> 人工處理中
+              </span>
+            </div>
+            <p class="text-[11px] text-indigo-600 font-medium flex items-center gap-1 mt-0.5">
+              <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span></span>
+              Tiffany 正在檢視此對話
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <button class="text-xs bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 transition-colors">
+            <i data-lucide="bot" class="w-4 h-4 text-emerald-600"></i> 交給 Bot
+          </button>
+          <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border border-gray-200 transition-colors">
+            <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> 巨集 (結案+發問卷)
+          </button>
+        </div>
+      </div>
+
+      <div id="chat-area" class="flex-1 overflow-y-auto p-6 space-y-4">
+        <!-- 內部協作備註 -->
+        <div class="flex justify-center my-4">
+          <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs px-4 py-2 rounded-lg shadow-sm flex items-start gap-2 max-w-lg">
+            <i data-lucide="lock" class="w-4 h-4 mt-0.5 shrink-0 text-yellow-600"></i>
+            <div><span class="font-bold">Ken Yeung (內部):</span> <span class="text-blue-600 font-medium">@Tiffany</span> 這個客人的 KPay 款項似乎有異常，我正在後台核對，請先安撫。</div>
+          </div>
+        </div>
+        
+        <div class="flex flex-col items-start w-full">
+          <div class="bg-white text-gray-800 p-3 rounded-2xl rounded-tl-none text-sm shadow-sm max-w-md border border-gray-200">
+            有人可以幫忙嗎？我已經等了很久了。
+          </div>
+          <span class="text-[10px] text-gray-400 mt-1">10:42</span>
+        </div>
+
+        <div class="flex flex-col items-start max-w-md mt-4">
+          <div class="bg-white text-gray-800 p-1 rounded-2xl rounded-tl-none text-sm shadow-sm border border-gray-200">
+            <div class="p-3">
+              <h4 class="font-bold text-gray-900 mb-1">為您查詢進度中 🔍</h4>
+              <p class="text-gray-600 text-sm">我們正在為您確認訂單狀況，請選擇您需要的後續協助：</p>
+            </div>
+            <div class="border-t border-gray-100 divide-y divide-gray-100">
+              <button class="w-full py-2.5 text-blue-600 font-medium hover:bg-gray-50 transition-colors">重新發送付款連結</button>
+              <button class="w-full py-2.5 text-blue-600 font-medium hover:bg-gray-50 transition-colors">聯絡真人客服</button>
+            </div>
+          </div>
+          <span class="text-[10px] text-gray-400 mt-1 pl-1">由 Bot 傳送 · 10:45</span>
+        </div>
+      </div>
+
+      <div class="bg-white border-t border-gray-200 p-3 shrink-0">
+        <div class="flex items-center gap-2 mb-2">
+          <button class="text-xs bg-gray-50 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md flex items-center gap-1.5 border border-gray-200 font-medium">
+            <i data-lucide="message-square-dashed" class="w-3.5 h-3.5 text-indigo-600"></i> 快捷回覆 (/)
+          </button>
+          <button class="text-xs bg-gray-50 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md flex items-center gap-1.5 border border-gray-200 font-medium">
+            <i data-lucide="braces" class="w-3.5 h-3.5 text-emerald-600"></i> 插入變數
+          </button>
+          <button class="text-xs bg-gray-50 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md flex items-center gap-1.5 border border-gray-200 font-medium">
+            <i data-lucide="layout-template" class="w-3.5 h-3.5 text-blue-600"></i> HSM 範本
+          </button>
+          <div class="ml-auto flex items-center gap-2">
+            <span class="text-[10px] font-bold text-gray-500">模式切換:</span>
+            <button id="toggle-note-btn" onclick="toggleNoteMode()" class="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 px-3 py-1.5 rounded-md flex items-center gap-1.5 border border-gray-200 font-medium transition-colors">
+              回覆顧客
+            </button>
+          </div>
+        </div>
+        <div id="input-container" class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-1 pr-2 focus-within:border-indigo-500 focus-within:bg-white transition-all">
+          <button class="p-2 text-gray-400 hover:text-gray-600 rounded-lg"><i data-lucide="paperclip" class="w-5 h-5"></i></button>
+          <input id="chat-input" type="text" placeholder="輸入訊息... (輸入 / 使用快捷，按 Enter 發送)" class="flex-1 bg-transparent border-none px-2 py-2 text-sm focus:outline-none focus:ring-0">
+          <button id="send-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-lg shadow-sm transition-colors">
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1.3 右側進階 CRM 面板 -->
+    <div class="w-[340px] bg-white border-l border-gray-200 flex flex-col h-full shrink-0 overflow-y-auto">
+      <div class="flex border-b border-gray-200 text-[13px] font-medium bg-gray-50 cursor-pointer">
+        <div id="tab-crm" class="flex-1 py-3 text-center text-indigo-600 bg-white border-b-2 border-indigo-600" onclick="switchRightTab('crm')">顧客 CRM</div>
+        <div id="tab-orders" class="flex-1 py-3 text-center text-gray-500 border-b-2 border-transparent hover:bg-gray-100" onclick="switchRightTab('orders')">訂單數據</div>
+        <div id="tab-history" class="flex-1 py-3 text-center text-gray-500 border-b-2 border-transparent hover:bg-gray-100" onclick="switchRightTab('history')">時間軸</div>
+      </div>
+      
+      <!-- CRM 面板內容 -->
+      <div id="panel-crm" class="block">
+        <div class="p-4 border-b border-gray-100">
+          <div class="flex gap-3 items-center">
+            <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 font-bold text-lg flex items-center justify-center">CO</div>
+            <div>
+              <h4 class="font-bold text-gray-900 text-base">CoLate0w0</h4>
+              <p class="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><i data-lucide="phone" class="w-3 h-3"></i> +852 6842 7992</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
+            <span class="text-xs font-bold text-gray-400">綁定帳號：</span>
+            <div class="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white" title="WhatsApp"><i data-lucide="message-circle" class="w-3 h-3"></i></div>
+            <div class="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white" title="Facebook"><i data-lucide="facebook" class="w-3 h-3"></i></div>
+            <div class="w-5 h-5 bg-gray-800 rounded-full flex items-center justify-center text-white" title="官網會員"><i data-lucide="globe" class="w-3 h-3"></i></div>
+          </div>
+        </div>
+
+        <div class="p-4 border-b border-gray-100 bg-slate-50">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">工單路由與狀態</label>
+          <div class="space-y-2">
+            <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded-lg">
+              <span class="text-xs text-gray-600">負責人</span>
+              <select class="text-xs border-none bg-transparent focus:ring-0 p-0 font-bold text-gray-800 cursor-pointer">
+                <option>Ken Yeung (系統管理員)</option>
+                <option>Tiffany (客服)</option>
+                <option>未分配</option>
+              </select>
+            </div>
+            <div class="flex justify-between items-center bg-white p-2 border border-gray-200 rounded-lg">
+              <span class="text-xs text-gray-600">狀態</span>
+              <select class="text-xs border-none bg-transparent focus:ring-0 p-0 font-bold text-indigo-700 cursor-pointer">
+                <option>跟進中 (Open)</option>
+                <option>待回覆 (Pending)</option>
+                <option>已結案 (Closed)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 border-b border-gray-100">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3 flex items-center gap-1">
+            <i data-lucide="tag" class="w-3.5 h-3.5"></i> 多重標籤
+          </label>
+          <div class="flex flex-wrap gap-1.5 mb-2" id="tag-container">
+            <span class="tag-item inline-flex items-center gap-1 bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded-md font-medium">急件處理 <i data-lucide="x" class="w-3 h-3 cursor-pointer tag-close hover:text-red-900"></i></span>
+            <span class="tag-item inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-md font-medium">VIP <i data-lucide="x" class="w-3 h-3 cursor-pointer tag-close hover:text-amber-900"></i></span>
+          </div>
+        </div>
+
+        <div class="p-4">
+          <div class="flex items-center justify-between mb-3">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+              <i data-lucide="database" class="w-3.5 h-3.5"></i> 自訂擴充欄位
+            </label>
+            <button class="text-xs text-indigo-600 font-medium">編輯</button>
+          </div>
+          <div class="space-y-3">
+            <div><span class="text-[11px] text-gray-400 block">偏好服務分店</span><p class="text-sm text-gray-800 font-medium">尖沙咀總店</p></div>
+            <div><span class="text-[11px] text-gray-400 block">車牌號碼</span><p class="text-sm text-gray-800 font-medium">AB1234</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POS 訂單面板內容 -->
+      <div id="panel-orders" class="hidden p-4">
+        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-4">最新 POS 訂單連動</label>
+        <div class="bg-white border border-gray-200 rounded-lg p-3 shadow-sm mb-3">
+          <div class="flex justify-between items-center mb-2">
+            <span class="font-bold text-gray-900 text-sm">#1458</span>
+            <span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded font-bold">待付款</span>
+          </div>
+          <p class="text-xs text-gray-600">項目: 2x 服務預約</p>
+          <p class="text-xs text-gray-600">金額: HKD 850.00</p>
+          <button class="mt-2 w-full text-xs bg-gray-50 hover:bg-gray-100 border border-gray-200 py-1.5 rounded text-gray-700 font-medium">發送付款連結</button>
+        </div>
+      </div>
+
+      <!-- 時間軸面板內容 -->
+      <div id="panel-history" class="hidden p-4">
+        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-4">全通路歷史軌跡</label>
+        <div class="space-y-4 border-l-2 border-gray-100 ml-2 pl-4 relative">
+          <div class="relative">
+            <div class="absolute -left-[21px] top-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-4 ring-white"></div>
+            <p class="text-xs text-gray-400">剛剛</p>
+            <p class="text-sm text-gray-800 font-medium">觸發 SLA 超時警告</p>
+          </div>
+          <div class="relative">
+            <div class="absolute -left-[21px] top-1 w-2.5 h-2.5 bg-green-500 rounded-full ring-4 ring-white"></div>
+            <p class="text-xs text-gray-400">2026-08-01</p>
+            <p class="text-sm text-gray-800 font-medium">系統自動貼上 [VIP] 標籤</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 主畫面 2: 系統與自動化設定後台 (Settings View) -->
+  <!-- ========================================== -->
+  <div id="view-settings" class="app-view bg-slate-50">
+    
+    <!-- 設定選單 (左側) -->
+    <div class="w-64 bg-white border-r border-gray-200 flex flex-col h-full shrink-0">
+      <div class="p-6 border-b border-gray-200">
+        <h2 class="font-bold text-gray-900 text-xl">管理與設定</h2>
+        <p class="text-xs text-gray-500 mt-1">系統管理員專屬</p>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 space-y-1">
+        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 ml-2 mt-2">工作流程</p>
+        <button onclick="switchSetting('routing', this)" class="menu-btn w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-indigo-700 bg-indigo-50">
+          <i data-lucide="git-merge" class="w-4 h-4"></i> 工單路由與分配
+        </button>
+        <button onclick="switchSetting('sla', this)" class="menu-btn w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50">
+          <i data-lucide="clock" class="w-4 h-4"></i> SLA 服務級別監控
+        </button>
+        <button onclick="switchSetting('macros', this)" class="menu-btn w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50">
+          <i data-lucide="zap" class="w-4 h-4"></i> 自動化巨集與標籤
+        </button>
+        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 ml-2 mt-6">營運管理</p>
+        <button class="menu-btn w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-50">
+          <i data-lucide="calendar" class="w-4 h-4"></i> 營業時間與休假
+        </button>
+      </div>
+    </div>
+
+    <!-- 設定內容顯示區 (右側) -->
+    <div class="flex-1 flex flex-col h-full overflow-y-auto">
+      
+      <!-- 設定面板 A：工單路由 -->
+      <div id="panel-routing" class="setting-panel active p-8 max-w-4xl">
+        <div class="mb-8">
+          <h1 class="text-2xl font-bold text-gray-900">工單路由與分配機制</h1>
+          <p class="text-sm text-gray-500 mt-1">控制系統如何將進線訊息分派給客服人員。</p>
+        </div>
+        <div class="space-y-6">
+          <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex justify-between items-center">
+            <div>
+              <h3 class="font-bold text-gray-900 text-base">智能輪詢分配 (Round-Robin)</h3>
+              <p class="text-sm text-gray-500 mt-1">自動將對話平均分派給在線人員。</p>
+            </div>
+            <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
+              <input type="checkbox" checked class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 z-10 right-0 border-indigo-600"/>
+              <label class="toggle-label block overflow-hidden h-6 rounded-full bg-indigo-600 cursor-pointer"></label>
+            </div>
+          </div>
+          <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex justify-between items-center">
+            <div>
+              <h3 class="font-bold text-gray-900 text-base">閒置對話釋放</h3>
+              <p class="text-sm text-gray-500 mt-1">客服超過 15 分鐘未回覆，系統自動退回公海池。</p>
+            </div>
+            <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
+              <input type="checkbox" checked class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 z-10 right-0 border-indigo-600"/>
+              <label class="toggle-label block overflow-hidden h-6 rounded-full bg-indigo-600 cursor-pointer"></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 設定面板 B：SLA 監控 -->
+      <div id="panel-sla" class="setting-panel p-8 max-w-4xl">
+        <div class="mb-8">
+          <h1 class="text-2xl font-bold text-gray-900">SLA 服務級別監控</h1>
+          <p class="text-sm text-gray-500 mt-1">設定回覆時效目標與超時警告。</p>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">首次回覆時間 (目標時效)</label>
+              <input type="number" value="10" class="w-20 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm"> <span class="text-sm">分鐘</span>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">警告觸發時間</label>
+              <span class="text-sm">剩餘</span> <input type="number" value="3" class="w-20 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm"> <span class="text-sm">分鐘亮紅燈</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 設定面板 C：巨集與問卷 -->
+      <div id="panel-macros" class="setting-panel p-8 max-w-4xl">
+        <div class="mb-8">
+          <h1 class="text-2xl font-bold text-gray-900">自動化巨集與問卷</h1>
+          <p class="text-sm text-gray-500 mt-1">管理快捷動作與滿意度調查設定。</p>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase text-xs font-bold tracking-wider">
+              <tr><th class="px-6 py-4">巨集名稱</th><th class="px-6 py-4">執行動作清單</th></tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr>
+                <td class="px-6 py-4 font-medium text-gray-900">一鍵結案並發送問卷</td>
+                <td class="px-6 py-4 text-gray-600">改狀態為已結案、發送 CSAT 範本</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
+  <script>
+    // 1. 啟動所有 SVG 圖示
+    lucide.createIcons();
+
+    // 2. 切換大畫面 (收件匣 vs 系統設定後台)
+    function switchAppView(viewId, btnElement) {
+      document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active'));
+      document.getElementById('view-' + viewId).classList.add('active');
+      
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-indigo-400', 'border-indigo-500');
+        btn.classList.add('text-slate-400', 'border-transparent');
+      });
+      if(btnElement) {
+        btnElement.classList.remove('text-slate-400', 'border-transparent');
+        btnElement.classList.add('text-indigo-400', 'border-indigo-500');
+      }
+    }
+
+    // 3. 切換設定頁面的次級面板 (路由 / SLA / 巨集)
+    function switchSetting(panelId, btnElement) {
+      document.querySelectorAll('.setting-panel').forEach(el => el.classList.remove('active'));
+      document.getElementById('panel-' + panelId).classList.add('active');
+      
+      document.querySelectorAll('.menu-btn').forEach(btn => {
+        btn.classList.remove('text-indigo-700', 'bg-indigo-50');
+        btn.classList.add('text-gray-600', 'hover:bg-gray-50');
+      });
+      btnElement.classList.remove('text-gray-600', 'hover:bg-gray-50');
+      btnElement.classList.add('text-indigo-700', 'bg-indigo-50');
+    }
+
+    // 4. 切換收件匣右側面板 (CRM / 訂單 / 時間軸)
+    function switchRightTab(tabName) {
+      const tabs = ['crm', 'orders', 'history'];
+      tabs.forEach(t => {
+        document.getElementById(`tab-${t}`).className = "flex-1 py-3 text-center text-gray-500 border-b-2 border-transparent hover:bg-gray-100";
+        document.getElementById(`panel-${t}`).classList.add('hidden');
+      });
+      document.getElementById(`tab-${tabName}`).className = "flex-1 py-3 text-center text-indigo-600 bg-white border-b-2 border-indigo-600 font-bold";
+      document.getElementById(`panel-${tabName}`).classList.remove('hidden');
+    }
+
+    // 5. 標籤刪除功能
+    document.getElementById('tag-container').addEventListener('click', function(e) {
+      const closeBtn = e.target.closest('.tag-close');
+      if (closeBtn) closeBtn.closest('.tag-item').remove();
+    });
+
+    // 6. 內部備註與一般對話模式切換
+    let isNoteMode = false;
+    function toggleNoteMode() {
+      isNoteMode = !isNoteMode;
+      const btn = document.getElementById('toggle-note-btn');
+      const inputContainer = document.getElementById('input-container');
+      const input = document.getElementById('chat-input');
+      const sendBtn = document.getElementById('send-btn');
+
+      if (isNoteMode) {
+        btn.innerHTML = '<i data-lucide="lock" class="w-3.5 h-3.5"></i> 內部備註';
+        btn.className = "text-xs bg-amber-100 text-amber-800 px-3 py-1.5 rounded-md flex items-center gap-1.5 border border-amber-300 font-bold transition-colors";
+        inputContainer.classList.add('note-mode-active');
+        input.placeholder = "輸入內部備註... (客戶無法看見)";
+        sendBtn.className = "bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-lg shadow-sm transition-colors";
+      } else {
+        btn.innerHTML = '回覆顧客';
+        btn.className = "text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 px-3 py-1.5 rounded-md flex items-center gap-1.5 border border-gray-200 font-medium transition-colors";
+        inputContainer.classList.remove('note-mode-active');
+        input.placeholder = "輸入訊息... (輸入 / 使用快捷，按 Enter 發送)";
+        sendBtn.className = "bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-lg shadow-sm transition-colors";
+      }
+      lucide.createIcons();
+    }
+
+    // 7. 發送訊息邏輯
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const chatArea = document.getElementById('chat-area');
+
+    function sendMessage() {
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      const now = new Date();
+      const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+      let msgHTML = '';
+
+      if (isNoteMode) {
+        msgHTML = `
+          <div class="flex justify-center my-4">
+            <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs px-4 py-2 rounded-lg shadow-sm flex items-start gap-2 max-w-lg">
+              <i data-lucide="lock" class="w-4 h-4 mt-0.5 shrink-0 text-yellow-600"></i>
+              <div><span class="font-bold">Ken Yeung (內部):</span> ${text}</div>
+            </div>
+          </div>
+        `;
+      } else {
+        msgHTML = `
+          <div class="flex flex-col items-end w-full mt-4">
+            <div class="bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-none text-sm shadow-sm max-w-md">
+              ${text}
+            </div>
+            <span class="text-[10px] text-gray-400 mt-1">${timeString}</span>
+          </div>
+        `;
+      }
+
+      chatArea.insertAdjacentHTML('beforeend', msgHTML);
+      lucide.createIcons();
+      chatInput.value = '';
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') sendMessage();
+    });
+  </script>
+</body>
+</html>
